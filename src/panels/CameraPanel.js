@@ -86,11 +86,7 @@ export class CameraPanel {
     }
 
     _applyType(type) {
-        const canvas = this.renderer.domElement
-        const w      = canvas.clientWidth  || 800
-        const h      = canvas.clientHeight || 600
-        const aspect = w / h
-
+        const aspect    = this.renderer.domElement.width / this.renderer.domElement.height
         const oldPos    = this.camera.position.clone()
         const oldTarget = this.controls.target.clone()
 
@@ -112,17 +108,22 @@ export class CameraPanel {
         newCam.zoom = this.state.zoom
         newCam.updateProjectionMatrix()
 
-        // Reutiliza os OrbitControls existentes trocando apenas a câmera interna
-        // OrbitControls expõe .object para isso — sem dispose, sem novo objeto,
-        // sem risco de event listeners duplicados ou destruídos no meio do frame
-        this.controls.object = newCam
-        this.controls.target.copy(oldTarget)
-        this.controls.update()
+        // Dispose dos controles antigos
+        this.controls.dispose()
 
-        // Atualiza referências locais e globais
-        this.camera          = newCam
-        window.__vlab.camera = newCam
-        // window.__vlab.controls continua o mesmo objeto — apenas .object mudou
+        // Recria os controles com a nova câmera
+        const newControls = new OrbitControls(newCam, this.renderer.domElement)
+        newControls.enableDamping = true
+        newControls.dampingFactor = 0.05
+        newControls.target.copy(oldTarget)
+        newControls.update()
+
+        this.camera   = newCam
+        this.controls = newControls
+
+        // Atualiza __vlab — o loop do main.js lê AMBOS daqui
+        window.__vlab.camera   = newCam
+        window.__vlab.controls = newControls
     }
 
     _applyPreset(name) {
@@ -150,12 +151,10 @@ export class CameraPanel {
         if (!this.camera.isPerspectiveCamera) {
             this._applyType('Perspective')
         } else {
-            this.camera.fov    = 60
-            this.camera.aspect = this.renderer.domElement.clientWidth /
-                                 this.renderer.domElement.clientHeight
-            this.camera.near   = 0.1
-            this.camera.far    = 1000
-            this.camera.zoom   = 1
+            this.camera.fov  = 60
+            this.camera.near = 0.1
+            this.camera.far  = 1000
+            this.camera.zoom = 1
             this.camera.updateProjectionMatrix()
         }
 
