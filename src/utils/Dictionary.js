@@ -1,26 +1,31 @@
 // Dictionary.js
 // Painel fixo no rodapé do panel-wrap
-// Clicar em qualquer label do Tweakpane com match no LabelMap → exibe definição
+// Clicar em label de binding → exibe definição + link para docs
+// NÃO decora: valores de dropdown, botões de ação, inputs numéricos
 
 export function initDictionary(containerEl, labelMap) {
   containerEl.innerHTML = `
     <div id="vlab-dict">
       <div id="vlab-dict-idle">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0">
-          <circle cx="8" cy="8" r="7" stroke="#333" stroke-width="1.2"/>
-          <path d="M8 7v5M8 5v1" stroke="#444" stroke-width="1.4" stroke-linecap="round"/>
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style="flex-shrink:0;opacity:0.35">
+          <rect x="2" y="3" width="14" height="2" rx="1" fill="currentColor"/>
+          <rect x="2" y="7" width="10" height="2" rx="1" fill="currentColor"/>
+          <rect x="2" y="11" width="12" height="2" rx="1" fill="currentColor"/>
         </svg>
         <span>Clique em um label para ver a definição</span>
       </div>
       <div id="vlab-dict-active">
         <div id="vlab-dict-top">
-          <span id="vlab-dict-term"></span>
-          <button id="vlab-dict-close" title="Fechar">✕</button>
+          <code id="vlab-dict-term"></code>
+          <a id="vlab-dict-link" href="#" target="_blank" title="Abrir documentação Three.js">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M5 2H2a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M8 1h3v3M11 1L6 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            docs
+          </a>
         </div>
-        <div id="vlab-dict-body">
-          <span id="vlab-dict-tag">definição</span>
-          <p id="vlab-dict-desc"></p>
-        </div>
+        <p id="vlab-dict-desc"></p>
       </div>
     </div>
   `
@@ -29,29 +34,28 @@ export function initDictionary(containerEl, labelMap) {
   const active  = containerEl.querySelector('#vlab-dict-active')
   const termEl  = containerEl.querySelector('#vlab-dict-term')
   const descEl  = containerEl.querySelector('#vlab-dict-desc')
-  const closeBtn = containerEl.querySelector('#vlab-dict-close')
+  const linkEl  = containerEl.querySelector('#vlab-dict-link')
 
-  // Estado inicial
   active.style.display = 'none'
 
-  closeBtn.addEventListener('click', () => {
-    active.style.display = 'none'
-    idle.style.display = 'flex'
-  })
-
-  function show(term, desc) {
-    termEl.textContent = term
-    descEl.textContent = desc
+  function show(entry) {
+    termEl.textContent = entry.label
+    descEl.textContent = entry.desc
+    if (entry.url) {
+      linkEl.href = entry.url
+      linkEl.style.display = 'inline-flex'
+    } else {
+      linkEl.style.display = 'none'
+    }
     idle.style.display   = 'none'
     active.style.display = 'block'
   }
 
   // ── decorateAll ───────────────────────────────────────────────────────────
-  // Percorre todos os labels do Tweakpane e adiciona comportamento de clique
-  // Tweakpane usa .tp-lblv_l para labels de binding
-  // Folders usam .tp-fldv_t (não decoramos folders, apenas bindings)
+  // APENAS decora .tp-lblv_l (labels de binding como "Shape", "Roughness")
+  // NÃO decora: .tp-lstv (list item), .tp-btnv_t (botão), .tp-fldv_t (folder title)
+  // Isso evita que valores de dropdown ("Albedo Map", "FrontSide") se tornem clicáveis
   function decorateAll(panelEl) {
-    // Labels de binding — texto ao lado do controle (ex: "Shape", "FOV", "Roughness")
     panelEl.querySelectorAll('.tp-lblv_l').forEach(el => {
       if (el.hasAttribute('data-dict-done')) return
       const text = el.textContent.trim()
@@ -61,64 +65,43 @@ export function initDictionary(containerEl, labelMap) {
         el.classList.add('dict-label')
         el.addEventListener('click', (e) => {
           e.stopPropagation()
-          show(entry.label, entry.desc)
-        })
-      }
-    })
-
-    // Também decora títulos de sub-folders (ex: "PBR Properties", "Fog Settings")
-    panelEl.querySelectorAll('.tp-fldv_t').forEach(el => {
-      if (el.hasAttribute('data-dict-done')) return
-      const raw = el.textContent.trim()
-      // Remove ícones unicode do início
-      const text = raw.replace(/^[\u2600-\u27BF\u{1F300}-\u{1F9FF}]\s*/u, '').trim()
-      const entry = findEntry(labelMap, text)
-      if (entry) {
-        el.setAttribute('data-dict-done', '1')
-        el.classList.add('dict-label')
-        el.addEventListener('click', (e) => {
-          e.stopPropagation()
-          show(entry.label, entry.desc)
+          show(entry)
         })
       }
     })
   }
 
-  return { decorateAll }
+  // API para exibir programaticamente (ex: ao mudar um dropdown)
+  function showByKey(key) {
+    const entry = labelMap[key]
+    if (entry) show(entry)
+  }
+
+  return { decorateAll, showByKey, show }
 }
 
 // ── Matching contra LabelMap ──────────────────────────────────────────────────
+// Match estrito: só exato ou limpeza de sufixos simples
+// Não usa match parcial agressivo para não capturar labels errados
 function findEntry(labelMap, rawText) {
   if (!rawText) return null
   const t = rawText.toLowerCase().trim()
 
-  // 1. Exato pelo label
+  // 1. Exato
   for (const k in labelMap) {
     if (labelMap[k].label.toLowerCase() === t) return labelMap[k]
   }
 
-  // 2. Label sem sufixo como "°" "×" ou parênteses
-  const tClean = t.replace(/[°×()]/g, '').trim()
+  // 2. Remove sufixos comuns e tenta novamente
+  const tClean = t.replace(/[°\s×()\[\]]/g, ' ').replace(/\s+/g, ' ').trim()
   for (const k in labelMap) {
-    if (labelMap[k].label.toLowerCase().replace(/[°×()]/g, '').trim() === tClean) return labelMap[k]
+    const lClean = labelMap[k].label.toLowerCase().replace(/[°\s×()\[\]]/g, ' ').replace(/\s+/g, ' ').trim()
+    if (lClean === tClean) return labelMap[k]
   }
 
-  // 3. label está contido no texto
+  // 3. Chave direta (snake_case → lowercase sem underscore)
   for (const k in labelMap) {
-    const lbl = labelMap[k].label.toLowerCase()
-    if (t.includes(lbl) && lbl.length > 3) return labelMap[k]
-  }
-
-  // 4. texto está contido no label
-  for (const k in labelMap) {
-    const lbl = labelMap[k].label.toLowerCase()
-    if (lbl.includes(t) && t.length > 3) return labelMap[k]
-  }
-
-  // 5. chave do mapa bate (underscore → space)
-  for (const k in labelMap) {
-    const kn = k.replace(/_/g, ' ')
-    if (kn === t || t.includes(kn) || kn.includes(t)) return labelMap[k]
+    if (k.replace(/_/g, ' ') === t) return labelMap[k]
   }
 
   return null
