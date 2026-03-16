@@ -27,9 +27,9 @@ const wrapper = document.getElementById('canvas-wrapper')
 const renderer = new THREE.WebGLRenderer({ antialias: true })
 renderer.setPixelRatio(window.devicePixelRatio)
 renderer.setSize(wrapper.clientWidth, wrapper.clientHeight)
-renderer.shadowMap.enabled = true
-renderer.shadowMap.type    = THREE.PCFSoftShadowMap
-renderer.toneMapping       = THREE.ACESFilmicToneMapping
+renderer.shadowMap.enabled   = true
+renderer.shadowMap.type      = THREE.PCFSoftShadowMap
+renderer.toneMapping         = THREE.ACESFilmicToneMapping
 renderer.toneMappingExposure = 1.0
 wrapper.appendChild(renderer.domElement)
 
@@ -60,8 +60,8 @@ const ground = new THREE.Mesh(
   new THREE.PlaneGeometry(10, 10),
   new THREE.MeshStandardMaterial({ color: '#1e1e1e', roughness: 1 })
 )
-ground.rotation.x = -Math.PI / 2
-ground.position.y = -1
+ground.rotation.x  = -Math.PI / 2
+ground.position.y  = -1
 ground.receiveShadow = true
 scene.add(ground)
 
@@ -76,32 +76,16 @@ const mesh = new THREE.Mesh(
 mesh.castShadow = mesh.receiveShadow = true
 scene.add(mesh)
 
-// __vlab é a fonte única de verdade para câmera e controles
-// CameraPanel escreve aqui ao trocar; animate e onResize leem daqui
-window.__vlab = { scene, camera, renderer, mesh, controls }
-
-// ── resize — lê sempre de __vlab, nunca da closure ──────────────────────────
 function onResize() {
-  const w   = wrapper.clientWidth
-  const h   = wrapper.clientHeight
-  const cam = window.__vlab.camera
-
-  if (cam.isPerspectiveCamera) {
-    cam.aspect = w / h
-  } else {
-    // OrthographicCamera: recalcula os planos laterais
-    const s = 3
-    const aspect = w / h
-    cam.left   = -s * aspect
-    cam.right  =  s * aspect
-    cam.top    =  s
-    cam.bottom = -s
-  }
-
-  cam.updateProjectionMatrix()
+  const w = wrapper.clientWidth
+  const h = wrapper.clientHeight
+  camera.aspect = w / h
+  camera.updateProjectionMatrix()
   renderer.setSize(w, h)
 }
 window.addEventListener('resize', onResize)
+
+window.__vlab = { scene, camera, renderer, mesh, controls }
 
 const panelManager = new PanelManager({ scene, camera, renderer, mesh, controls })
 panelManager.resetAll()
@@ -120,15 +104,9 @@ document.getElementById('btn-clear').addEventListener('click', () => {
   reDecorate()
 })
 
-// ── loop de animação ─────────────────────────────────────────────────────────
-// Lê camera e controls de __vlab a cada frame — nunca usa closure
 function animate() {
   requestAnimationFrame(animate)
   window.__vlab.controls.update()
-
-  const cam      = window.__vlab.camera
-  const composer = window.__vlab.composer
-  if (composer) composer.render()
-  else          renderer.render(scene, cam)
+  renderer.render(scene, window.__vlab.camera)
 }
 animate()
