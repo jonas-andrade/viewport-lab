@@ -100,12 +100,18 @@ window.addEventListener('resize', onResize)
 
 // ─── PANEL MANAGER ───────────────────────────────────────────────────────────
 
+// __vlab precisa existir ANTES do PanelManager — o CameraPanel escreve nele
+window.__vlab = { scene, camera, renderer, mesh, material, controls }
+
 const panelManager = new PanelManager({
   scene, camera, renderer, mesh, material, controls
 })
 
 panelManager.resetAll()
 
+document.getElementById('btn-clear').addEventListener('click', () => {
+  panelManager.resetAll()
+})
 // ─── CLEAR BUTTON ────────────────────────────────────────────────────────────
 
 document.getElementById('btn-clear').addEventListener('click', () => {
@@ -113,11 +119,10 @@ document.getElementById('btn-clear').addEventListener('click', () => {
 })
 
 // ─── LOOP ────────────────────────────────────────────────────────────────────
-
 function animate() {
   requestAnimationFrame(animate)
   controls.update()
-  renderer.render(scene, camera)
+  renderer.render(scene, window.__vlab.camera)
 }
 
 animate()
