@@ -10,7 +10,7 @@
   --text-muted:   #666;
   --accent:       #4f8ef7;
   --accent-dim:   rgba(79,142,247,0.1);
-  --panel-width:  340px;
+  --panel-width:  400px;
 }
 
 html, body {
@@ -48,13 +48,13 @@ html, body {
 
 #panel-header {
   flex-shrink: 0;
-  padding: 14px 16px 13px;
+  padding: 16px 18px 14px;
   border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 12px;
 }
 
 #panel-header-icon {
-  width: 30px; height: 30px;
+  width: 32px; height: 32px;
   background: var(--accent-dim);
   border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
@@ -62,17 +62,17 @@ html, body {
 }
 
 #panel-header-title {
-  font-size: 14px; font-weight: 600;
+  font-size: 15px; font-weight: 600;
   color: var(--text-primary); letter-spacing: 0.01em;
 }
 
 #panel-header-sub {
-  font-size: 12px; color: var(--text-muted); margin-top: 1px;
+  font-size: 12px; color: var(--text-muted); margin-top: 2px;
 }
 
 #panel {
   flex: 1; overflow-y: auto; overflow-x: hidden;
-  padding: 6px 6px 0; min-height: 0;
+  padding: 8px 8px 0; min-height: 0;
 }
 
 #panel::-webkit-scrollbar { width: 3px; }
@@ -85,19 +85,19 @@ html, body {
 
 #vlab-dict {
   background: #0d0d0d;
-  padding: 13px 16px 16px;
-  min-height: 96px;
+  padding: 14px 18px 18px;
+  min-height: 104px;
 }
 
 #vlab-dict-idle {
   display: flex; align-items: center; gap: 10px;
-  min-height: 70px;
+  min-height: 76px;
   color: var(--text-muted);
   font-size: 13px;
   user-select: none;
 }
 
-#vlab-dict-idle span { line-height: 1.45; }
+#vlab-dict-idle span { line-height: 1.5; }
 
 #vlab-dict-active { display: none; }
 
@@ -112,14 +112,14 @@ html, body {
   font-size: 14px; font-weight: 600;
   color: var(--accent); letter-spacing: 0.02em;
   background: var(--accent-dim);
-  padding: 2px 8px; border-radius: 4px;
+  padding: 3px 10px; border-radius: 5px;
 }
 
 #vlab-dict-link {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 11px; color: var(--text-muted);
   text-decoration: none; letter-spacing: 0.03em;
-  padding: 3px 7px; border-radius: 4px;
+  padding: 3px 8px; border-radius: 4px;
   border: 1px solid var(--border-mid);
   transition: color 0.15s, border-color 0.15s;
 }
@@ -173,9 +173,9 @@ html, body {
 
 .tp-dfwv { width: 100% !important; }
 
-/* Folder title */
+/* Folder title — seção principal */
 .tp-fldv_t {
-  font-size: 13px !important;
+  font-size: 15px !important;
   font-weight: 600 !important;
   letter-spacing: 0 !important;
   text-transform: none !important;
@@ -185,28 +185,38 @@ html, body {
 
 /* Label ao lado do controle */
 .tp-lblv_l {
-  font-size: 14px !important;
-  color: #8e8e8e !important;
+  font-size: 15px !important;
+  color: #a0a0a0 !important;
 }
 
-/* Valor numérico */
+/* Input numérico */
 .tp-sldtxtv_t input,
 .tp-txtv_i {
-  font-size: 13px !important;
+  font-size: 14px !important;
+}
+
+/* Dropdown */
+.tp-lstv_s {
+  font-size: 14px !important;
 }
 
 /* Botão */
 .tp-btnv_t {
-  font-size: 13px !important;
+  font-size: 14px !important;
   font-weight: 500 !important;
 }
 
-/* Altura das linhas */
-.tp-lblv, .tp-btnv, .tp-brkv { min-height: 32px !important; }
+/* Altura das linhas — espaço generoso */
+.tp-lblv, .tp-btnv, .tp-brkv { min-height: 36px !important; }
+
+/* Folder expandida */
+.tp-fldv_b {
+  padding-top:    4px !important;
+  padding-bottom: 6px !important;
+}
 
 .tp-sprv_r { border-color: #222 !important; opacity: 0.6; }
 .tp-colswv { border-radius: 4px; }
-.tp-lstv_s { font-size: 13px !important; }
 
 /* Checkbox */
-.tp-ckbv_w { width: 18px !important; height: 18px !important; }
+.tp-ckbv_w { width: 20px !important; height: 20px !important; }

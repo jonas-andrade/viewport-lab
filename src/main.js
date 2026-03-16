@@ -36,7 +36,9 @@ wrapper.appendChild(renderer.domElement)
 const scene = new THREE.Scene()
 scene.background = new THREE.Color('#1a1a1a')
 
-const camera = new THREE.PerspectiveCamera(60, wrapper.clientWidth / wrapper.clientHeight, 0.1, 1000)
+const camera = new THREE.PerspectiveCamera(
+  60, wrapper.clientWidth / wrapper.clientHeight, 0.1, 1000
+)
 camera.position.set(0, 1.5, 4)
 
 const controls = new OrbitControls(camera, renderer.domElement)
@@ -44,8 +46,7 @@ controls.enableDamping = true
 controls.dampingFactor = 0.05
 controls.target.set(0, 0, 0)
 
-const ambient = new THREE.AmbientLight(0xffffff, 0.4)
-scene.add(ambient)
+scene.add(new THREE.AmbientLight(0xffffff, 0.4))
 
 const dirLight = new THREE.DirectionalLight(0xffffff, 1.2)
 dirLight.position.set(5, 8, 5)
@@ -68,35 +69,48 @@ const grid = new THREE.GridHelper(10, 20, '#2a2a2a', '#222222')
 grid.position.y = -1
 scene.add(grid)
 
-const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5)
-const material = new THREE.MeshStandardMaterial()
-const mesh     = new THREE.Mesh(geometry, material)
-mesh.castShadow    = true
-mesh.receiveShadow = true
+const mesh = new THREE.Mesh(
+  new THREE.BoxGeometry(1.5, 1.5, 1.5),
+  new THREE.MeshStandardMaterial()
+)
+mesh.castShadow = mesh.receiveShadow = true
 scene.add(mesh)
 
+// __vlab é a fonte única de verdade para câmera e controles
+// CameraPanel escreve aqui ao trocar; animate e onResize leem daqui
+window.__vlab = { scene, camera, renderer, mesh, controls }
+
+// ── resize — lê sempre de __vlab, nunca da closure ──────────────────────────
 function onResize() {
-  const w = wrapper.clientWidth
-  const h = wrapper.clientHeight
-  camera.aspect = w / h
-  camera.updateProjectionMatrix()
+  const w   = wrapper.clientWidth
+  const h   = wrapper.clientHeight
+  const cam = window.__vlab.camera
+
+  if (cam.isPerspectiveCamera) {
+    cam.aspect = w / h
+  } else {
+    // OrthographicCamera: recalcula os planos laterais
+    const s = 3
+    const aspect = w / h
+    cam.left   = -s * aspect
+    cam.right  =  s * aspect
+    cam.top    =  s
+    cam.bottom = -s
+  }
+
+  cam.updateProjectionMatrix()
   renderer.setSize(w, h)
 }
 window.addEventListener('resize', onResize)
 
-window.__vlab = { scene, camera, renderer, mesh, material, controls }
-
-const panelManager = new PanelManager({ scene, camera, renderer, mesh, material, controls })
+const panelManager = new PanelManager({ scene, camera, renderer, mesh, controls })
 panelManager.resetAll()
 
-// Dictionary — inicializa e injeta nos painéis que precisam de showByKey
-const dictSlot = document.getElementById('panel-dict-slot')
-const dict = initDictionary(dictSlot, LabelMap)
-
-// Injeta referência do dict nos painéis que usam showByKey ao mudar dropdown
+const dictSlot   = document.getElementById('panel-dict-slot')
+const dict       = initDictionary(dictSlot, LabelMap)
 panelManager.panels.surface._dict = dict
 
-const panelEl   = document.getElementById('panel')
+const panelEl    = document.getElementById('panel')
 const reDecorate = () => requestAnimationFrame(() => dict.decorateAll(panelEl))
 panelEl.addEventListener('click', reDecorate)
 reDecorate()
@@ -106,12 +120,15 @@ document.getElementById('btn-clear').addEventListener('click', () => {
   reDecorate()
 })
 
+// ── loop de animação ─────────────────────────────────────────────────────────
+// Lê camera e controls de __vlab a cada frame — nunca usa closure
 function animate() {
   requestAnimationFrame(animate)
-  // Lê sempre de window.__vlab para pegar câmera/controls trocados
   window.__vlab.controls.update()
+
+  const cam      = window.__vlab.camera
   const composer = window.__vlab.composer
   if (composer) composer.render()
-  else renderer.render(scene, window.__vlab.camera)
+  else          renderer.render(scene, cam)
 }
 animate()
