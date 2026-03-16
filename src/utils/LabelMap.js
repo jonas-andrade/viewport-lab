@@ -2,6 +2,7 @@
 // Dicionário de termos técnicos de renderização 3D
 // Estrutura: CHAVE => { label: 'termo original', desc: 'explicação PT-BR' }
 
+
 export const LabelMap = {
 
     // ── GEOMETRY ──────────────────────────────────────────────────────────────
