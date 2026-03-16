@@ -6,6 +6,8 @@ import { LightingPanel }    from './LightingPanel.js'
 import { ShadowPanel }      from './ShadowPanel.js'
 import { EnvironmentPanel } from './EnvironmentPanel.js'
 import { CameraPanel }      from './CameraPanel.js'
+import { RendererPanel }    from './RendererPanel.js'
+import { PostFXPanel }      from './PostFXPanel.js'
 
 export class PanelManager {
   constructor({ scene, camera, renderer, mesh, material, controls }) {
@@ -105,6 +107,8 @@ export class PanelManager {
     this.panels.shadow      = new ShadowPanel(folders.shadow,           ctx)
     this.panels.environment = new EnvironmentPanel(folders.environment, ctx)
     this.panels.camera      = new CameraPanel(folders.camera,           ctx)
+    this.panels.renderer    = new RendererPanel(folders.renderer,       ctx)
+    this.panels.postfx      = new PostFXPanel(folders.postfx,           ctx)
 
     this.folders = folders
   }

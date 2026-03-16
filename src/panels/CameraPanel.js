@@ -194,12 +194,10 @@ export class CameraPanel {
     }
 
     _addLabel(folder, title, desc) {
-        folder.addBlade({
-            view: 'text',
-            label: '',
-            parse: v => v,
-            value: `${title} — ${desc}`,
-        })
+        const el = document.createElement('div')
+        el.className = 'vlab-label'
+        el.textContent = `${title} — ${desc}`
+        folder.element.appendChild(el)
     }
     reset() {
         this.state.type = 'Perspective'
