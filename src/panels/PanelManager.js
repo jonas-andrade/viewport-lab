@@ -1,47 +1,117 @@
+import * as THREE from 'three'
 import { Pane } from 'tweakpane'
+import { GeometryPanel }    from './GeometryPanel.js'
+import { SurfacePanel }     from './SurfacePanel.js'
+import { LightingPanel }    from './LightingPanel.js'
+import { ShadowPanel }      from './ShadowPanel.js'
+import { EnvironmentPanel } from './EnvironmentPanel.js'
+import { CameraPanel }      from './CameraPanel.js'
 
 export class PanelManager {
-    constructor({ scene, camera, renderer, mesh, material, controls }) {
-        // Guarda referências de tudo que os painéis precisam manipular
-        this.scene = scene
-        this.camera = camera
-        this.renderer = renderer
-        this.mesh = mesh
-        this.material = material
-        this.controls = controls
+  constructor({ scene, camera, renderer, mesh, material, controls }) {
+    this.scene    = scene
+    this.camera   = camera
+    this.renderer = renderer
+    this.mesh     = mesh
+    this.material = material
+    this.controls = controls
 
-        // container: o elemento #panel no DOM
-        this.container = document.getElementById('panel')
-
-        // Instancia o Tweakpane apontando pro container
-        // O Tweakpane vai injetar o painel dentro desse elemento
-        this.pane = new Pane({ container: this.container, title: '' })
-
-        this._setupFolders()
-        this._applyTheme()
+    this.toggles = {
+      geometry:    true,
+      surface:     true,
+      lighting:    true,
+      shadow:      true,
+      environment: true,
     }
 
-    _setupFolders() {
-        // Cria cada categoria como uma folder colapsada
-        // expanded: false = começa fechada
+    this._savedMaterial = null
+    this._defaultBg     = '#1a1a1a'
 
-        this.folders = {
-            geometry: this.pane.addFolder({ title: '⬡  Geometry', expanded: false }),
-            surface: this.pane.addFolder({ title: '◈  Surface', expanded: false }),
-            lighting: this.pane.addFolder({ title: '☀  Lighting', expanded: false }),
-            shadow: this.pane.addFolder({ title: '◐  Shadow', expanded: false }),
-            environment: this.pane.addFolder({ title: '⬡  Environment', expanded: false }),
-            camera: this.pane.addFolder({ title: '⊙  Camera', expanded: false }),
-            postfx: this.pane.addFolder({ title: '✦  Post FX', expanded: false }),
-            renderer: this.pane.addFolder({ title: '▣  Renderer', expanded: false }),
+    this.container = document.getElementById('panel')
+    this.pane      = new Pane({ container: this.container, title: '' })
+    this.panels    = {}
+
+    this._setupFolders()
+    this._applyTheme()
+  }
+
+  _setupFolders() {
+    const ctx = {
+      scene:    this.scene,
+      camera:   this.camera,
+      renderer: this.renderer,
+      mesh:     this.mesh,
+      material: this.material,
+      controls: this.controls,
+    }
+
+    const makeFolder = (title, icon, key, onToggle) => {
+      const f = this.pane.addFolder({ title: `${icon}  ${title}`, expanded: false })
+      const toggleState = { enabled: true }
+      f.addBinding(toggleState, 'enabled', { label: '⏻ Active' })
+       .on('change', ({ value }) => {
+         this.toggles[key] = value
+         onToggle(value)
+       })
+      f.addBlade({ view: 'separator' })
+      return f
+    }
+
+    const folders = {
+      geometry: makeFolder('Geometry', '⬡', 'geometry', (on) => {
+        this.mesh.visible = on
+      }),
+
+      surface: makeFolder('Surface', '◈', 'surface', (on) => {
+        if (!on) {
+          this._savedMaterial = this.mesh.material
+          this.mesh.material  = new THREE.MeshNormalMaterial()
+        } else {
+          if (this._savedMaterial) {
+            this.mesh.material.dispose()
+            this.mesh.material  = this._savedMaterial
+            this._savedMaterial = null
+          }
         }
+      }),
+
+      lighting: makeFolder('Lighting', '☀', 'lighting', (on) => {
+        this.scene.traverse(obj => {
+          if (obj.isLight) obj.visible = on
+        })
+      }),
+
+      shadow: makeFolder('Shadow', '◐', 'shadow', (on) => {
+        this.renderer.shadowMap.enabled = on
+        this.scene.traverse(obj => {
+          if (obj.material) obj.material.needsUpdate = true
+        })
+      }),
+
+      environment: makeFolder('Environment', '🌐', 'environment', (on) => {
+        this.scene.background = new THREE.Color(on ? this._defaultBg : '#000000')
+        if (!on) this.scene.fog = null
+      }),
+
+      camera:   this.pane.addFolder({ title: '⊙  Camera',   expanded: false }),
+      postfx:   this.pane.addFolder({ title: '✦  Post FX',  expanded: false }),
+      renderer: this.pane.addFolder({ title: '▣  Renderer', expanded: false }),
     }
 
-    _applyTheme() {
-        // Tweakpane usa CSS variables para theming
-        // Sobrescreve as variáveis padrão dele para combinar com nosso dark theme
-        const style = document.createElement('style')
-        style.textContent = `
+    // ── Instancia todos os painéis ─────────────────────────────────────────
+    this.panels.geometry    = new GeometryPanel(folders.geometry,       ctx)
+    this.panels.surface     = new SurfacePanel(folders.surface,         ctx)
+    this.panels.lighting    = new LightingPanel(folders.lighting,       ctx)
+    this.panels.shadow      = new ShadowPanel(folders.shadow,           ctx)
+    this.panels.environment = new EnvironmentPanel(folders.environment, ctx)
+    this.panels.camera      = new CameraPanel(folders.camera,           ctx)
+
+    this.folders = folders
+  }
+
+  _applyTheme() {
+    const style = document.createElement('style')
+    style.textContent = `
       .tp-dfwv {
         width: 100% !important;
         --tp-base-background-color: #141414;
@@ -70,11 +140,27 @@ export class PanelManager {
         --tp-plugin-foreground-color: #e0e0e0;
       }
     `
-        document.head.appendChild(style)
+    document.head.appendChild(style)
+  }
+
+  getFolder(name) { return this.folders[name] }
+
+  resetAll() {
+    this.mesh.visible               = true
+    this.renderer.shadowMap.enabled = true
+    this.scene.background           = new THREE.Color(this._defaultBg)
+    this.scene.fog                  = null
+
+    if (this._savedMaterial) {
+      this.mesh.material.dispose()
+      this.mesh.material  = this._savedMaterial
+      this._savedMaterial = null
     }
 
-    // Método público — cada painel vai chamar isso pra pegar a folder dele
-    getFolder(name) {
-        return this.folders[name]
-    }
+    this.scene.traverse(obj => {
+      if (obj.isLight) obj.visible = true
+    })
+
+    Object.values(this.panels).forEach(p => p.reset?.())
+  }
 }

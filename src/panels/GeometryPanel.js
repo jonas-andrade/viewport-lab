@@ -1,8 +1,6 @@
 import * as THREE from 'three'
 import { LabelMap } from '../utils/LabelMap.js'
 
-// Mapa de geometrias disponíveis
-// Cada entrada: nome exibido => função que retorna a geometria
 const GEOMETRIES = {
   'Box':          () => new THREE.BoxGeometry(1.5, 1.5, 1.5),
   'Sphere':       () => new THREE.SphereGeometry(0.9, 32, 32),
@@ -20,15 +18,14 @@ export class GeometryPanel {
     this.mesh   = mesh
     this.folder = folder
 
-    // Estado local — o que está selecionado agora
     this.state = {
-      geometry:    'Box',
-      wireframe:   false,
-      flatShading: false,
-      segments:    1,       // multiplicador de subdivisão
-      rotateX:     0,
-      rotateY:     0,
-      rotateZ:     0,
+      geometry:     'Box',
+      wireframe:    false,
+      flatShading:  false,
+      segments:     1,
+      rotateX:      0,
+      rotateY:      0,
+      rotateZ:      0,
       scaleUniform: 1,
     }
 
@@ -38,9 +35,7 @@ export class GeometryPanel {
   _build() {
     const f = this.folder
 
-    // ── Tipo de geometria ──────────────────────────────────────────────────
     this._addLabel(f, 'Geometry Type', 'Forma base do objeto na cena')
-
     f.addBinding(this.state, 'geometry', {
       label: 'Shape',
       options: Object.fromEntries(Object.keys(GEOMETRIES).map(k => [k, k]))
@@ -48,9 +43,7 @@ export class GeometryPanel {
       this._swapGeometry(value)
     })
 
-    // ── Subdivisão ─────────────────────────────────────────────────────────
     this._addLabel(f, 'Segments', 'Subdivide a malha — mais segmentos = mais suave')
-
     f.addBinding(this.state, 'segments', {
       label: 'Segments ×',
       min: 1, max: 8, step: 1
@@ -60,9 +53,7 @@ export class GeometryPanel {
 
     f.addBlade({ view: 'separator' })
 
-    // ── Modos de visualização ──────────────────────────────────────────────
     this._addLabel(f, 'Display Mode', 'Como a malha é exibida visualmente')
-
     f.addBinding(this.state, 'wireframe', {
       label: LabelMap.wireframe.label
     }).on('change', ({ value }) => {
@@ -78,9 +69,7 @@ export class GeometryPanel {
 
     f.addBlade({ view: 'separator' })
 
-    // ── Transformações ─────────────────────────────────────────────────────
     this._addLabel(f, 'Transform', 'Rotação e escala do objeto')
-
     f.addBinding(this.state, 'rotateX', {
       label: 'Rotate X', min: -Math.PI, max: Math.PI, step: 0.01
     }).on('change', ({ value }) => { this.mesh.rotation.x = value })
@@ -102,16 +91,10 @@ export class GeometryPanel {
     })
   }
 
-  // Troca a geometria do mesh mantendo o material atual
   _swapGeometry(name) {
-    const seg   = this.state.segments
-    const build = GEOMETRIES[name]
-
-    if (!build) return
-
-    // Cada geometria precisa respeitar o multiplicador de segmentos
-    // Geometrias têm parâmetros diferentes — precisamos reconstruir com seg
+    const seg = this.state.segments
     let geo
+
     switch (name) {
       case 'Box':
         geo = new THREE.BoxGeometry(1.5, 1.5, 1.5, seg, seg, seg); break
@@ -132,17 +115,13 @@ export class GeometryPanel {
       case 'Icosahedron':
         geo = new THREE.IcosahedronGeometry(1, seg - 1); break
       default:
-        geo = build()
+        geo = GEOMETRIES[name]?.() ?? new THREE.BoxGeometry(1.5, 1.5, 1.5)
     }
 
-    // dispose: libera a geometria anterior da memória da GPU
-    // Sem isso, cada troca vaza memória
     this.mesh.geometry.dispose()
     this.mesh.geometry = geo
   }
 
-  // Injeta um label descritivo acima de um controle
-  // O Tweakpane não tem subtitle nativo — usamos um blade de texto
   _addLabel(folder, title, desc) {
     folder.addBlade({
       view: 'text',
@@ -152,15 +131,14 @@ export class GeometryPanel {
     })
   }
 
-  // Reset público — chamado pelo botão ⟳
   reset() {
-    this.state.geometry    = 'Box'
-    this.state.wireframe   = false
-    this.state.flatShading = false
-    this.state.segments    = 1
-    this.state.rotateX     = 0
-    this.state.rotateY     = 0
-    this.state.rotateZ     = 0
+    this.state.geometry     = 'Box'
+    this.state.wireframe    = false
+    this.state.flatShading  = false
+    this.state.segments     = 1
+    this.state.rotateX      = 0
+    this.state.rotateY      = 0
+    this.state.rotateZ      = 0
     this.state.scaleUniform = 1
 
     this.mesh.geometry.dispose()
