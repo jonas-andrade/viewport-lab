@@ -1,6 +1,20 @@
 # VLab — Three.js Scene Lab
 
 A hands-on environment for testing and understanding Three.js in practice. Built for developers and 3D students who want to experiment with the engine without writing boilerplate.
+## Preview
+
+![preview](./demo.gif)
+
+<video 
+  src="https://raw.githubusercontent.com/jonas-andrade/viewport-lab/main/public/demo.mp4"
+  autoplay 
+  loop 
+  muted 
+  playsinline 
+  width="700">
+</video>
+
+---
 
 ## What you can explore
 
