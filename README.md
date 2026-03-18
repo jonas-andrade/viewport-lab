@@ -3,7 +3,7 @@
 A hands-on environment for testing and understanding Three.js in practice. Built for developers and 3D students who want to experiment with the engine without writing boilerplate.
 ## Preview
 
-![preview](./demo.gif)
+![preview](./demo.mp4)
 
 <video 
   src="https://raw.githubusercontent.com/jonas-andrade/viewport-lab/main/public/demo.mp4"
